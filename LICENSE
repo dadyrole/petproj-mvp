@@ -1,0 +1,111 @@
+PROPRIETARY SOFTWARE LICENSE
+
+Copyright (c) 2026 dadyrole (https://github.com/dadyrole). All rights reserved.
+
+The software contained in this repository — including, without limitation,
+all source code, configuration, scripts, art assets created by the copyright
+holder, sprite sheets, sprite-sheet layouts, generated metadata, and
+documentation — is the exclusive intellectual property of the copyright
+holder (the "Software").
+
+================================================================================
+1.  GRANT
+================================================================================
+
+NO LICENSE OR RIGHT, express or implied, is granted to any person, company,
+or other entity to use, copy, view (beyond reading on github.com), modify,
+merge, publish, distribute, sublicense, sell, host, train machine-learning
+models on, or create derivative works of the Software, in whole or in part,
+by any means, electronic or otherwise, without the prior written permission
+of the copyright holder.
+
+The presence of this repository on a public source-hosting platform shall
+NOT be construed as a grant of any of the rights enumerated above.
+
+================================================================================
+2.  PROHIBITED ACTS
+================================================================================
+
+The following are expressly forbidden absent a separate, signed, paid
+commercial license from the copyright holder:
+
+  (a) Cloning, forking, mirroring, or otherwise reproducing the repository
+      for any purpose other than transient reading on the hosting platform.
+  (b) Running the Software, in original or modified form, in any production,
+      revenue-generating, customer-facing, or otherwise commercial context.
+  (c) Incorporating, statically linking, dynamically linking, or otherwise
+      embedding the Software, or any portion of it (including individual
+      functions, classes, asset files, or sprite frames), into another
+      product or service.
+  (d) Redistributing the Software in source or compiled form, with or
+      without modification, by any channel including app stores, package
+      registries, mirrors, archives, or torrent networks.
+  (e) Reverse-engineering, decompiling, disassembling, or extracting
+      portions of the Software for reuse outside this repository.
+  (f) Using the Software, or any portion thereof, as training data,
+      fine-tuning data, in-context examples, or retrieval corpora for
+      machine-learning models, agents, or automated code-generation
+      systems, whether the resulting model is distributed or kept private.
+  (g) Removing, altering, or obscuring this notice, the copyright header
+      on any source file, or the LICENSE file itself.
+
+================================================================================
+3.  COMMERCIAL LICENSING
+================================================================================
+
+Commercial use is available exclusively under an individually negotiated,
+written license agreement signed by the copyright holder. Pricing starts at
+USD 1,000,000.00 (one million United States dollars) per organization per
+year and increases with usage volume, distribution model, and integration
+depth. Discounted terms are not offered.
+
+Inquiries: salatiksama@gmail.com
+
+The copyright holder reserves the right to refuse any commercial-license
+inquiry without explanation and is under no obligation to issue a license
+to any inquirer at any price.
+
+================================================================================
+4.  THIRD-PARTY ASSETS
+================================================================================
+
+Certain art assets in `assets/cat/` were generated using PixelLab AI
+(https://pixellab.ai) under that service's Terms of Service. Use of those
+specific assets outside this repository is additionally subject to
+PixelLab's terms; this license does not, and cannot, override them. All
+other assets — including procedurally generated sprites in `assets/person/`,
+the ASCII-grid sprite definitions in `sprites.py`, and all source code in
+this repository — are governed solely by this license.
+
+================================================================================
+5.  ENFORCEMENT
+================================================================================
+
+Unauthorized use, reproduction, or distribution of the Software constitutes
+copyright infringement under the Berne Convention and the copyright laws
+of all signatory jurisdictions, and may also constitute breach of contract,
+unfair competition, or trade-secret misappropriation under applicable law.
+
+The copyright holder reserves the right to pursue all available legal and
+equitable remedies, including injunctive relief, statutory damages, actual
+damages, disgorgement of profits, and recovery of attorneys' fees and
+litigation costs.
+
+================================================================================
+6.  NO WARRANTY
+================================================================================
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT.
+
+IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES,
+OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE,
+ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+================================================================================
+
+If you are reading this and have not signed a written commercial license
+with the copyright holder, you have no permission to do anything with this
+Software. Close the tab.

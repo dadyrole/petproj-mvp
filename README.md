@@ -174,5 +174,16 @@ will overwrite your work with the ASCII version. Use specific targets only.
 
 ## License
 
-MIT — do whatever you want with it. The pixel art was generated procedurally
-or via PixelLab; the project itself lives under the same terms.
+**Proprietary. All rights reserved.** See `LICENSE` for the full text.
+
+In short: you may **read** this repository on GitHub. You may NOT clone it,
+fork it, run it, copy any code or assets out of it, redistribute it, embed
+it in another product, or use it as training data for machine-learning
+models — without a signed commercial license from the copyright holder.
+
+Commercial licensing inquiries: **salatiksama@gmail.com**. Pricing starts
+at USD 1,000,000 / organization / year. Refusal of any inquiry is at the
+copyright holder's sole discretion.
+
+PixelLab-generated assets in `assets/cat/` are additionally subject to
+PixelLab's Terms of Service.
