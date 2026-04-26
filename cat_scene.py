@@ -31,15 +31,12 @@ from spritesheet import SpriteSheet
 ASSETS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
 
 LIE_FRAME_HOLD = 8          # ticks per lying frame (slow breathing) — fixed
-LIE_CHANCE_PER_TICK = 0.003 # ~once every ~30 sec while walking
-LIE_DURATION_TICKS = 80     # ~5 s
 SIT_FRAME_HOLD = 8          # ticks per sit frame
-SIT_CHANCE_PER_TICK = 0.003 # same odds as lie; cat picks one or the other
-SIT_DURATION_TICKS = 100    # ~6 s
 ACTOR_NAME = "cat"
 
-# walk_frame_hold / run_frame_hold are config-driven (CatCfg), so the user
-# can tune animation pace and movement multipliers from the Config dialog.
+# walk_frame_hold / run_frame_hold are config-driven (CatCfg).
+# Rest durations + count of rests per visit are also config-driven; see
+# CatCfg.lie_min_cycles / lie_max_cycles / sit_*_cycles / rests_per_visit_*.
 
 
 class State(Enum):
@@ -72,6 +69,10 @@ class CatScene(QObject):
         self.lie_ticks_left = 0
         self.sit_ticks_left = 0
         self.exit_side: str = "right"
+        # Visit script: how many rests still planned for this visit. Counted
+        # down each time we enter LYING or SITTING. When it hits 0 and we
+        # finish the current rest (or current walk), we head for the exit.
+        self._rests_remaining = 0
         # Debug stepping: when > 0, the scene un-pauses for this many ticks
         # of normal-rate playback, then re-freezes. Lets you watch a single
         # animation frame transition happen in real time.
@@ -275,9 +276,15 @@ class CatScene(QObject):
         spawn_side = random.choice(edges)
         self.facing_left = spawn_side == "right"
         self.x = float(self._spawn_x(spawn_side))
-        self.target_x = self._exit_target_x(
-            "left" if spawn_side == "right" else "right"
+
+        # Plan the visit: schedule N rests; first walk goes to a random inland
+        # target, not straight to the exit edge.
+        self._rests_remaining = random.randint(
+            max(0, self.config.cat.rests_per_visit_min),
+            max(0, self.config.cat.rests_per_visit_max),
         )
+        self.target_x = self._pick_next_target()
+
         self.frame_idx = 0
         frames = self._walk_left if self.facing_left else self._walk_right
         self.cat.set_pixmap(frames[0])
@@ -286,24 +293,94 @@ class CatScene(QObject):
         self._set_state(State.WALKING)
 
     def _tick_walk(self) -> None:
-        if self._has_clearance_to_rest():
-            r = random.random()
-            if r < LIE_CHANCE_PER_TICK:
-                self._begin_lie()
-                return
-            if r < LIE_CHANCE_PER_TICK + SIT_CHANCE_PER_TICK:
-                self._begin_sit()
-                return
-
         hold = self._walk_hold()
         mult = self.config.cat.walk_stride_multiplier
         delta = self._delta_for_tick(self.config.cat.walk_frame_deltas, hold) * mult
         self.x += -delta if self.facing_left else delta
         self._draw_walk()
-        if (not self.facing_left and self.x >= self.target_x) or (
-            self.facing_left and self.x <= self.target_x
-        ):
+
+        reached = (
+            (not self.facing_left and self.x >= self.target_x)
+            or (self.facing_left and self.x <= self.target_x)
+        )
+        if not reached:
+            return
+
+        # Arrived at current target. If more rests planned, rest. Else exit.
+        if self._rests_remaining > 0 and self._has_clearance_to_rest():
+            self._begin_rest()
+        elif self._rests_remaining > 0:
+            # Edge of screen — skip rest, pick a new target.
+            self.target_x = self._pick_next_target()
+            self._update_facing_for_target()
+        else:
             self._exit_now()
+
+    # ---- target / direction helpers ------------------------------------
+
+    def _walk_speed_px_per_tick(self) -> float:
+        """Average screen-px the cat moves per tick at current walk settings.
+        Used to pick targets that take at least min_transit_seconds to reach."""
+        cfg = self.config.cat
+        cycle_dist = sum(cfg.walk_frame_deltas) * cfg.walk_stride_multiplier
+        cycle_ticks = max(1, len(cfg.walk_frame_deltas) * self._walk_hold())
+        return cycle_dist / cycle_ticks
+
+    def _min_transit_px(self) -> int:
+        """Minimum walking distance for the next leg, derived from
+        config.cat.min_transit_seconds and current walk speed."""
+        seconds = max(0.0, self.config.cat.min_transit_seconds)
+        ticks = seconds * 1000.0 / TICK_MS
+        speed = max(0.1, self._walk_speed_px_per_tick())
+        return max(self.cat.width(), int(seconds * 0 + speed * ticks))
+
+    def _pick_next_target(self) -> int:
+        """Random inland target if we still have rests left, otherwise an
+        external edge to walk off through. Inland targets are constrained to
+        be at least `min_transit_seconds` of walking away."""
+        lane = self.lane
+        if self._rests_remaining <= 0:
+            # Heading out — pick the further external edge for a longer exit.
+            edges = lane.external_edges
+            if len(edges) == 1:
+                side = edges[0]
+            else:
+                cx = self.x + self.cat.width() / 2
+                d_left = cx - lane.full.left()
+                d_right = lane.full.right() - cx
+                side = "right" if d_right >= d_left else "left"
+            return self._exit_target_x(side)
+
+        min_dist = self._min_transit_px()
+        lo = lane.full.left() + int(lane.full.width() * 0.2)
+        hi = lane.full.right() - int(lane.full.width() * 0.2) - self.cat.width()
+        if hi <= lo:
+            return (lo + hi) // 2
+
+        # Try to find a point at least min_dist away from current x.
+        for _ in range(40):
+            candidate = random.randint(lo, hi)
+            if abs(candidate - self.x) >= min_dist:
+                return candidate
+        # Lane too narrow to fit min_dist — fall back to the far edge of the
+        # available range, whichever side is farther from current position.
+        if self.x - lo > hi - self.x:
+            return lo
+        return hi
+
+    def _update_facing_for_target(self) -> None:
+        new_facing_left = self.target_x < self.x
+        if new_facing_left != self.facing_left:
+            self.facing_left = new_facing_left
+            self.frame_idx = 0  # restart walk cycle on a turn-around
+
+    def _begin_rest(self) -> None:
+        """Pick lie or sit (weighted by sit_vs_lie_ratio), kick off that state."""
+        self._rests_remaining -= 1
+        if random.random() < self.config.cat.sit_vs_lie_ratio:
+            self._begin_sit()
+        else:
+            self._begin_lie()
 
     def _draw_walk(self) -> None:
         frames = self._walk_left if self.facing_left else self._walk_right
@@ -313,10 +390,23 @@ class CatScene(QObject):
         self.cat.set_pixmap(frames[idx])
         self.cat.move_to(int(self.x), self._ground_y())
 
+    def _rest_duration_ticks(
+        self, n_anim_frames: int, frame_hold: int,
+        min_cycles: float, max_cycles: float,
+    ) -> int:
+        """Random duration in ticks: `cycles ∈ [min, max]` × frames-per-cycle ×
+        ticks-per-frame. Auto-scales when frame_hold changes."""
+        cycles = random.uniform(min(min_cycles, max_cycles),
+                                max(min_cycles, max_cycles))
+        return max(1, int(cycles * n_anim_frames * frame_hold))
+
     def _begin_lie(self) -> None:
-        self.lie_ticks_left = LIE_DURATION_TICKS
-        self.frame_idx = 0
         frames = self._lie_left if self.facing_left else self._lie_right
+        self.lie_ticks_left = self._rest_duration_ticks(
+            len(frames), LIE_FRAME_HOLD,
+            self.config.cat.lie_min_cycles, self.config.cat.lie_max_cycles,
+        )
+        self.frame_idx = 0
         self.cat.set_pixmap(frames[0])
         self.cat.move_to(int(self.x), self._ground_y())
         self._set_state(State.LYING)
@@ -329,11 +419,14 @@ class CatScene(QObject):
         self.cat.set_pixmap(frames[idx])
         self.cat.move_to(int(self.x), self._ground_y())
         if self.lie_ticks_left <= 0:
-            self._set_state(State.WALKING)
+            self._resume_walking()
 
     def _begin_sit(self) -> None:
         """Cat plops down facing the camera (south). Doesn't move."""
-        self.sit_ticks_left = SIT_DURATION_TICKS
+        self.sit_ticks_left = self._rest_duration_ticks(
+            len(self._sit), SIT_FRAME_HOLD,
+            self.config.cat.sit_min_cycles, self.config.cat.sit_max_cycles,
+        )
         self.frame_idx = 0
         self.cat.set_pixmap(self._sit[0])
         self.cat.move_to(int(self.x), self._ground_y())
@@ -347,7 +440,15 @@ class CatScene(QObject):
         self.cat.set_pixmap(frames[idx])
         self.cat.move_to(int(self.x), self._ground_y())
         if self.sit_ticks_left <= 0:
-            self._set_state(State.WALKING)
+            self._resume_walking()
+
+    def _resume_walking(self) -> None:
+        """Called when a rest finishes. Pick the next target (another stop or
+        the exit), face the right direction, and re-enter WALKING."""
+        self.target_x = self._pick_next_target()
+        self._update_facing_for_target()
+        self.frame_idx = 0
+        self._set_state(State.WALKING)
 
     def _begin_flee(self) -> None:
         self.exit_side = self._nearest_external_edge()

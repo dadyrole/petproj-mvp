@@ -66,6 +66,24 @@ class CatCfg:
         default_factory=lambda: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
     )
 
+    # ---- visit script (multi-stage walk → rest → walk → rest → exit) ----
+    # Number of rests (lie or sit) per visit. 0 = walk straight across.
+    rests_per_visit_min: int = 3
+    rests_per_visit_max: int = 5
+    # Rest durations, measured in full animation cycles. Auto-scales with the
+    # animation pace (lie/sit frame_hold) so behaviour stays roughly the same
+    # regardless of how fast the user runs the animation.
+    lie_min_cycles: float = 1.5
+    lie_max_cycles: float = 4.0
+    sit_min_cycles: float = 1.0
+    sit_max_cycles: float = 3.0
+    # Probability that a rest is sit (vs lie). 0.5 = half/half.
+    sit_vs_lie_ratio: float = 0.5
+    # Minimum walking time between two checkpoints (rest → next rest, or rest
+    # → exit), in seconds. Picked targets are constrained so the walk takes
+    # at least this long at the cat's current effective speed.
+    min_transit_seconds: float = 3.0
+
 
 # ---------------------------------------------------------------------------
 # Top-level Config.
